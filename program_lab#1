@@ -1,0 +1,554 @@
+import tkinter as tk
+from tkinter import StringVar
+
+variables = {}
+
+#-----------------------------Конвектори-----------------------------
+
+# Функція для перетворення десяткового числа у базу 2^64
+def decimal_to_base(name, number):
+    variables[f"{name}"] = []  # Ініціалізуємо порожній список для блоків
+
+    # Записуємо число в базі 2^64
+    while number > 0:
+        variables[f"{name}"].append(number % (2**64))
+        number //= (2**64)
+
+    size = len(variables[f"{name}"])  # Задаємо розмір
+
+    # Повертаємо ім'я змінної та її фактичний розмір як результат
+    return name, size
+
+# Функція для перетворення з бази 2^64 у десяткове число
+def base_to_decimal(a):
+    number = 0  # Число у десятковому записі
+
+    # Зчитуємо число в базі 2^64
+    for index, block in enumerate(variables[a[0]]):
+        number += block * (2**64)**index
+
+    # Повертаємо число у десятковому записі
+    return number
+
+# Функція для перетворення числа з бази 2^64 у двійкове
+def base_to_binary(a):
+    binary = ""  # Рядок для збереження результату
+
+    # Проходимо по кожному блоку, починаючи з найстаршого
+    for block in reversed(variables[a[0]]):
+        block_binary = bin(block)[2:].zfill(64)  # Перетворення блоку у 64-бітове двійкове число
+        binary += block_binary
+
+    # Видаляємо провідні нулі
+    binary = binary.lstrip('0') or '0'
+
+    # Зберігаємо результат як список
+    variables[f"binary_{a[0]}"] = [int(bit) for bit in binary[::-1]]
+
+    size = len(variables[f"binary_{a[0]}"])
+    return f"binary_{a[0]}", size
+
+# Функція для перетворення двійкового числа у базу 2^64
+def binary_to_base(a):
+    binary_list = variables[a[0]][::-1]  # Реверс списку для роботи з молодших до старших
+
+    # Ініціалізуємо порожній список для 64-бітових блоків
+    variables[f"base_{a[0]}"] = []
+
+    block_value = 0  # Поточне значення блоку
+    bit_position = 0  # Поточна позиція біта в межах 64-бітного блоку
+
+    for bit in binary_list:
+        block_value += bit * (2 ** bit_position)
+        bit_position += 1
+
+        if bit_position == 64:
+            variables[f"base_{a[0]}"].append(block_value)
+            block_value = 0
+            bit_position = 0
+
+    if bit_position > 0:
+        variables[f"base_{a[0]}"].append(block_value)
+
+    size = len(variables[f"base_{a[0]}"])
+    return f"base_{a[0]}", size
+
+# Функція для перетворення числа з бази 2^64 у шістнадцяткове
+def base_to_hexadecimal(a):
+    hex_str = ""  # Рядок для шістнадцяткового результату
+
+    # Проходимо по кожному блоку у зворотному порядку
+    for block in reversed(variables[a[0]]):
+        block_hex = hex(block)[2:].zfill(16)  # Перетворення блоку у 16-символьне шістнадцяткове число
+        hex_str += block_hex
+
+    # Видаляємо провідні нулі
+    hex_str = hex_str.lstrip("0") or "0"
+
+    return hex_str
+
+# Функція для перетворення шістнадцяткового числа у базу 2^64
+def hexadecimal_to_base(name, hex_str):
+    variables[f"{name}"] = []  # Ініціалізуємо порожній список
+
+    # Нормалізуємо рядок, додаючи провідні нулі, щоб його довжина була кратною 16
+    if len(hex_str) % 16 != 0:
+        hex_str = '0' * (16 - len(hex_str) % 16) + hex_str
+
+    # Проходимо по рядку з кінця, захоплюючи по 16 символів за раз
+    for i in range(len(hex_str), 0, -16):
+        block_hex = hex_str[max(i - 16, 0):i]
+        block_value = int(block_hex, 16)  # Перетворюємо блок у десяткове число
+        variables[f"{name}"].append(block_value)
+
+    size = len(variables[f"{name}"])
+    return name, size
+
+# Функція для перетворення десяткового числа у шістнадцяткове
+def decimal_to_hexadecimal(a):
+    return hex(a)[2:]  # Видаляємо префікс "0x"
+
+# Функція для перетворення шістнадцяткового числа у десяткове
+def hexadecimal_to_decimal(a):
+    return int(a, 16)
+
+# Функція для перетворення двійкового числа у десяткове
+def binary_to_decimal(a):
+    binary_list = variables[a[0]]  # Отримуємо список бітів
+    binary_str = ''.join(str(bit) for bit in reversed(binary_list))  # Створюємо двійковий рядок
+    decimal_value = int(binary_str, 2)  # Перетворюємо у десяткове число
+
+    return decimal_value
+
+# Функція для перетворення десяткового числа у двійкове
+def decimal_to_binary(name, a):
+    binary_string = bin(a)[2:]
+    binary_list = [int(bit) for bit in reversed(binary_string)]
+
+    variables[f"binary_{name}"] = binary_list
+    size = len(binary_list)
+
+    return f"binary_{name}", size
+
+# Функція для перетворення шістнадцяткового числа у двійкове
+def hexadecimal_to_binary(name, a):
+    binary_string = bin(int(a, 16))[2:]
+    binary_list = [int(bit) for bit in reversed(binary_string)]
+
+    variables[f"binary_{name}"] = binary_list
+    size = len(binary_list)
+
+    return f"binary_{name}", size
+
+# Функція для перетворення двійкового числа у шістнадцяткове
+def binary_to_hexadecimal(a):
+    binary_list = variables[a[0]]  # Отримуємо список бітів
+    binary_str = ''.join(str(bit) for bit in reversed(binary_list))  # Створюємо двійковий рядок
+    hex_value = hex(int(binary_str, 2))[2:]  # Перетворюємо у шістнадцяткове число
+
+    return hex_value
+
+#-----------------------------Основні функцій-----------------------------
+
+# Функція додавання двох багаторозрядних чисел, на вхід приймаються числа у системі числення 2^64
+def addLong(a, b):
+    max_size = max(a[1], b[1])
+    variables[f"{a[0]}_add_{b[0]}"] = [0] * (max_size + 1)
+    carry = 0
+
+    for i in range(max_size):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        temp = x + y + carry
+        variables[f"{a[0]}_add_{b[0]}"][i] = temp % (2**64)
+        carry = temp // (2**64)
+
+    if carry:
+        variables[f"{a[0]}_add_{b[0]}"][max_size] = carry
+        result_size = max_size + 1
+    else:
+        result_size = max_size
+    return f"{a[0]}_add_{b[0]}", result_size
+
+# Функція віднімання одного багаторозрядного чисела від іншого багаторозрядного, на вхід приймаються числа у системі числення 2^64
+def minLong(a, b):
+    max_size = max(a[1], b[1])
+    variables[f"{a[0]}_min_{b[0]}"] = [0] * max_size
+    borrow = 0
+
+    for i in range(max_size):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        temp = x - y - borrow
+        if temp >= 0:
+            variables[f"{a[0]}_min_{b[0]}"][i] = temp
+            borrow = 0
+        else:
+            variables[f"{a[0]}_min_{b[0]}"][i] = 2**64 + temp
+            borrow = 1
+
+    result_size = max_size
+    while result_size > 1 and variables[f"{a[0]}_min_{b[0]}"][result_size - 1] == 0:
+        result_size -= 1
+
+    return f"{a[0]}_min_{b[0]}", result_size
+
+# Функція множення двох багаторозрядних чисел на цифру (в цій системі числення), на вхід приймаються числа у системі числення 2^64
+def multiplication_one_digit(a, digit, name):
+    variables[f"{a[0]}_mult_digit_{name}"] = [0] * (a[1] + 1)
+    carry = 0
+
+    for i in range(a[1]):
+        temp = variables[f"{a[0]}"][i] * digit + carry
+        variables[f"{a[0]}_mult_digit_{name}"][i] = temp % (2**64)
+        carry = temp // (2**64)
+
+    if carry:
+        variables[f"{a[0]}_mult_digit_{name}"][a[1]] = carry
+        result_size = a[1] + 1
+    else:
+        result_size = a[1]
+
+    return f"{a[0]}_mult_digit_{name}", result_size
+
+# Функція зсуву в ліво багаторозрядного чисела, на вхід приймається число у системах числення 2^64 і двійковій (множення на 2)
+def left_shift(a, shift):
+    if shift > 0:
+        variables[f"{a[0]}_left_shift"] = [0] * shift + variables[f"{a[0]}"]
+        size = a[1] + shift
+        return f"{a[0]}_left_shift", size
+    else:
+        return f"{a[0]}", a[1]
+
+# Функція зсуву вправо багаторозрядного чисела, на вхід приймається число у системах числення 2^64 і двійковій (ділення на 2)
+def right_shift(a, shift):
+    if shift > 0:
+        variables[f"{a[0]}_right_shift"] = variables[f"{a[0]}"][shift:]
+        size = max(1, a[1] - shift)
+        return f"{a[0]}_right_shift", size
+    else:
+        return f"{a[0]}", a[1]
+
+# Функція множення двох багаторозрядних чисел, на вхід приймаються числа у системі числення 2^64
+def multiplication(a, b):
+    variables[f"{a[0]}_mult_{b[0]}"] = [0] * (a[1] + b[1])
+    result_size = a[1] + b[1]
+
+    for i in range(b[1]):
+        digit_mult = multiplication_one_digit(a, variables[f"{b[0]}"][i], f"digit_{i}")
+        shifted_mult = left_shift(digit_mult, i)
+        temp_sum = addLong((f"{a[0]}_mult_{b[0]}", result_size), shifted_mult)
+        variables[f"{a[0]}_mult_{b[0]}"] = variables[temp_sum[0]]
+
+    return f"{a[0]}_mult_{b[0]}", result_size
+
+# Функція порівняння двох багаторозрядних чисел, на вхід приймаються числа у системах числення 2^64 і двійковій
+def comparison(a, b):
+    max_size = max(a[1], b[1])
+    for i in range(max_size - 1, -1, -1):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        if x > y:
+            return 1
+        elif x < y:
+            return -1
+    return 0
+
+# Функція віднімання одного багаторозрядного чисела від іншого багаторозрядного, на вхід приймаються числа у системі числення 2
+def min_binary(a, b):
+    # Ініціалізуємо масив для результату
+    max_size = max(a[1], b[1])
+    min_size = min(a[1], b[1])
+    variables[f"{a[0]}_min_binary_{b[0]}"] = [0] * max_size
+    borrow = 0
+
+    # Вирівнюємо розміри масивів, якщо необхідно
+    if len(variables[f"{a[0]}"]) < max_size:
+        variables[f"{a[0]}"] += [0] * (max_size - len(variables[f"{a[0]}"]))
+    if len(variables[f"{b[0]}"]) < max_size:
+        variables[f"{b[0]}"] += [0] * (max_size - len(variables[f"{b[0]}"]))
+
+    # Проходимо по масиву від кінця (меншого розряду) до початку (більшого розряду)
+    for i in range(max_size):
+        temp = variables[f"{a[0]}"][i] - variables[f"{b[0]}"][i] - borrow
+        if temp >= 0:
+            variables[f"{a[0]}_min_binary_{b[0]}"][i] = temp
+            borrow = 0
+        else:
+            variables[f"{a[0]}_min_binary_{b[0]}"][i] = 2 + temp
+            borrow = 1
+
+    while variables[f"{a[0]}_min_binary_{b[0]}"][len(variables[f"{a[0]}_min_binary_{b[0]}"])-1] == 0:
+        variables[f"{a[0]}_min_binary_{b[0]}"] = variables[f"{a[0]}_min_binary_{b[0]}"][:-1]
+        if len(variables[f"{a[0]}_min_binary_{b[0]}"]) in [0,1]:
+            break
+
+    return f"{a[0]}_min_binary_{b[0]}", len(variables[f"{a[0]}_min_binary_{b[0]}"])
+
+# Функція ділення одного багаторозрядного числа на інше багаторозрядне, на вхід приймаються числа у системах числення 2^64 і двійковій
+def division(a, b, binary=False):
+    if binary:
+        a_binary = a
+        b_binary = b
+    else:
+        # Переводимо вхідні числа в базу 2
+        a_binary = base_to_binary(a)
+        b_binary = base_to_binary(b)
+
+    max_size = max(a_binary[1], b_binary[1])
+
+    # Ініціалізуємо масив для результату та залишку
+    variables[f"{a[0]}_div_{b[0]}"] = [0] * max_size  # Результат ділення
+    variables[f"{a[0]}_mod_{b[0]}"] = [0] * max_size  # Залишок
+
+    r = a_binary  # Залишок
+    k = b_binary[1]  # Розмір дільника у бітах
+    variables["q"] = [0] * max_size  # Ціла частина ділення
+
+    # Основний цикл ділення
+    iter = 0
+    while comparison(r, b_binary) in [0, 1]:
+        t = r[1]  # Поточний розмір залишку у бітах
+
+        # Зсуваємо дільник вліво так, щоб вирівняти його з залишком
+        c = left_shift(b_binary, t - k)
+
+        if comparison(r, c) == -1:  # Якщо вийшло забагато
+            t -= 1  # Повертаємося на біт назад
+            c = left_shift(b_binary, t - k)
+
+        # Виконуємо віднімання
+        r = min_binary(r, c)
+
+        # Оновлюємо результат ділення (записуємо 1 у відповідний біт)
+        p = t - k
+        if p < len(variables["q"]):
+            variables["q"][p] = 1
+
+        f = comparison(r, b_binary)
+
+    while variables["q"][len(variables["q"])-1] == 0:
+        variables["q"] = variables["q"][:-1]
+        if len(variables["q"]) == 1:
+            break
+
+    # Зберігаємо результат
+    variables[f"{a[0]}_div_{b[0]}"] = variables["q"]  # Результат ділення
+    variables[f"{a[0]}_mod_{b[0]}"] = variables[r[0]]  # Залишок
+
+    return f"{a[0]}_div_{b[0]}", f"{a[0]}_mod_{b[0]}"
+
+# Функція для додавання двох шістнадцяткових чисел
+def add_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо додавання
+    result_name, _ = addLong((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для віднімання двох шістнадцяткових чисел
+def sub_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо віднімання
+    result_name, _ = minLong((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для множення двох шістнадцяткових чисел
+def mul_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо множення
+    result_name, _ = multiplication((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для ділення двох шістнадцяткових чисел
+def div_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо ділення
+    quotient_name, remainder_name = division((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    quotient_hex = binary_to_hexadecimal((quotient_name,))
+    remainder_hex = binary_to_hexadecimal((remainder_name,))
+    return quotient_hex, remainder_hex
+
+#-----------------------------Функцій обробки користувацьких запитів (кнопок)-----------------------------
+
+def add():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    b = second_hex_var.get("1.0", tk.END).strip()
+    result_add = add_hex(a, b)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A+B: " + result_add)
+
+def sub():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    b = second_hex_var.get("1.0", tk.END).strip()
+    result_sub = sub_hex(a, b)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A-B: " + result_sub)
+
+def mul():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    b = second_hex_var.get("1.0", tk.END).strip()
+    result_mul = mul_hex(a, b)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A*B: " + result_mul)
+
+def div():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    b = second_hex_var.get("1.0", tk.END).strip()
+    result_quotient, result_remainder = div_hex(a, b)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A/B: quotient: " + result_quotient + '\n' + "remainder: " + result_remainder)
+
+def convert_hexadecimal_to_decimal():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    result_dec = hexadecimal_to_decimal(a)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (dec): " + str(result_dec))
+
+def convert_decimal_to_hexadecimal():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    a = int(a)
+    result_dec = decimal_to_hexadecimal(a)
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (dec): " + result_dec)
+
+def convert_hexadecimal_to_binary():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    name_bin, size_bin = hexadecimal_to_binary("a", a)
+    result_bin = variables[name_bin]
+    result_bin.reverse()
+    result_bin = str(result_bin).strip('[]').replace(', ', '')
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (bin): " + str(result_bin))
+
+def convert_binary_to_hexadecimal():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    a = list(a)
+    a.reverse()
+    variables["a"] = a
+    size_bin = len(a)
+    result_hex = binary_to_hexadecimal(["a", size_bin])
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (hex): " + result_hex)
+
+def convert_decimal_to_binary():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    name_bin, size_bin = decimal_to_binary("a", int(a))
+    result_bin = variables[name_bin]
+    result_bin.reverse()
+    result_bin = str(result_bin).strip('[]').replace(', ', '')
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (bin): " + str(result_bin))
+
+def convert_binary_to_decimal():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    a = list(a)
+    a.reverse()
+    variables["a"] = a
+    size_bin = len(a)
+    result_dec = binary_to_decimal(["a", size_bin])
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (dec): " + str(result_dec))
+
+def convert_hexadecimal_to_base():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    name_base, size_base = hexadecimal_to_base("a", a)
+    result_base = variables[name_base]
+    for _ in (range(16 - size_base)):
+        result_base.append(0)
+    result_base.reverse()
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (base): " + str(result_base))
+
+def convert_decimal_to_base():
+    a = first_hex_var.get("1.0", tk.END).strip()
+    name_base, size_base = decimal_to_base("a", int(a))
+    result_base = variables[name_base]
+    for _ in (range(16 - size_base)):
+        result_base.append(0)
+    result_base.reverse()
+    result_var.delete("1.0", tk.END)
+    result_var.insert(tk.END, "A (base): " + str(result_base))
+
+def clear():
+    # Очистити поля вводу та результату
+    first_hex_var.delete(1.0, tk.END)
+    second_hex_var.delete(1.0, tk.END)
+    result_var.delete(1.0, tk.END)
+
+#-----------------------------Головне вікно-----------------------------
+
+# Створення головного вікна
+master = tk.Tk()
+master.title("Hexadecimal Calculator")
+
+# Введення для першого шістнадцяткового числа
+label1 = tk.Label(master, text="A (hex):")
+label1.grid(row=0, column=0)
+
+first_hex_var = tk.Text(master, height=6, width=150)
+first_hex_var.grid(row=0, column=1)
+
+# Введення для другого шістнадцяткового числа
+label2 = tk.Label(master, text="B (hex):")
+label2.grid(row=1, column=0)
+
+second_hex_var = tk.Text(master, height=6, width=150)
+second_hex_var.grid(row=1, column=1)
+
+# Виведення результату
+result_label = tk.Label(master, text="Result:")
+result_label.grid(row=2, column=0)
+
+result_var = tk.Text(master, height=12, width=150)
+result_var.grid(row=2, column=1)
+
+# Фрейм для кнопок
+button_frame = tk.Frame(master)
+button_frame.grid(row=3, column=0, columnspan=4, pady=10)
+
+# Кнопки операцій
+buttons = [
+    ("Add", add),
+    ("Subtract", sub),
+    ("Multiply", mul),
+    ("Divide", div),
+    ("Convert A (hex -> dec)", convert_hexadecimal_to_decimal),
+    ("Convert A (hex -> bin)", convert_hexadecimal_to_binary),
+    ("Convert A (dec -> bin)", convert_decimal_to_binary),
+    ("Convert A (hex -> base)", convert_hexadecimal_to_base),
+    ("Convert A (dec -> hex)", convert_decimal_to_hexadecimal),
+    ("Convert A (bin -> hex)", convert_binary_to_hexadecimal),
+    ("Convert A (bin -> dec)", convert_binary_to_decimal),
+    ("Convert A (dec -> base)", convert_decimal_to_base),
+]
+
+# Розташування кнопок у чотири стовпці
+for i, (text, command) in enumerate(buttons):
+    row, col = divmod(i, 4)
+    btn = tk.Button(button_frame, text=text, command=command, width=20)
+    btn.grid(row=row, column=col, padx=5, pady=5)
+
+# Кнопка "Clear" окремо
+clear_button = tk.Button(master, text="Clear", command=clear, width=20, bg="red", fg="white")
+clear_button.grid(row=4, column=0, columnspan=4, pady=10)
+
+master.mainloop()
