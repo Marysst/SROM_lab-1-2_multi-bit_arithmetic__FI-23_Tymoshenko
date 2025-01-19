@@ -1,0 +1,574 @@
+variables = {}
+
+#-----------------------------Конвектори-----------------------------
+
+# Функція для перетворення десяткового числа у базу 2^64
+def decimal_to_base(name, number):
+    variables[f"{name}"] = []  # Ініціалізуємо порожній список для блоків
+
+    # Записуємо число в базі 2^64
+    while number > 0:
+        variables[f"{name}"].append(number % (2**64))
+        number //= (2**64)
+
+    size = len(variables[f"{name}"])  # Задаємо розмір
+
+    # Повертаємо ім'я змінної та її фактичний розмір як результат
+    return name, size
+
+# Функція для перетворення з бази 2^64 у десяткове число
+def base_to_decimal(a):
+    number = 0  # Число у десятковому записі
+
+    # Зчитуємо число в базі 2^64
+    for index, block in enumerate(variables[a[0]]):
+        number += block * (2**64)**index
+
+    # Повертаємо число у десятковому записі
+    return number
+
+# Функція для перетворення числа з бази 2^64 у двійкове
+def base_to_binary(a):
+    binary = ""  # Рядок для збереження результату
+
+    # Проходимо по кожному блоку, починаючи з найстаршого
+    for block in reversed(variables[a[0]]):
+        block_binary = bin(block)[2:].zfill(64)  # Перетворення блоку у 64-бітове двійкове число
+        binary += block_binary
+
+    # Видаляємо провідні нулі
+    binary = binary.lstrip('0') or '0'
+
+    # Зберігаємо результат як список
+    variables[f"binary_{a[0]}"] = [int(bit) for bit in binary[::-1]]
+
+    size = len(variables[f"binary_{a[0]}"])
+    return f"binary_{a[0]}", size
+
+# Функція для перетворення двійкового числа у базу 2^64
+def binary_to_base(a):
+    binary_list = variables[a[0]][::-1]  # Реверс списку для роботи з молодших до старших
+
+    # Ініціалізуємо порожній список для 64-бітових блоків
+    variables[f"base_{a[0]}"] = []
+
+    block_value = 0  # Поточне значення блоку
+    bit_position = 0  # Поточна позиція біта в межах 64-бітного блоку
+
+    for bit in binary_list:
+        block_value += bit * (2 ** bit_position)
+        bit_position += 1
+
+        if bit_position == 64:
+            variables[f"base_{a[0]}"].append(block_value)
+            block_value = 0
+            bit_position = 0
+
+    if bit_position > 0:
+        variables[f"base_{a[0]}"].append(block_value)
+
+    size = len(variables[f"base_{a[0]}"])
+    return f"base_{a[0]}", size
+
+# Функція для перетворення числа з бази 2^64 у шістнадцяткове
+def base_to_hexadecimal(a):
+    hex_str = ""  # Рядок для шістнадцяткового результату
+
+    # Проходимо по кожному блоку у зворотному порядку
+    for block in reversed(variables[a[0]]):
+        block_hex = hex(block)[2:].zfill(16)  # Перетворення блоку у 16-символьне шістнадцяткове число
+        hex_str += block_hex
+
+    # Видаляємо провідні нулі
+    hex_str = hex_str.lstrip("0") or "0"
+
+    return hex_str
+
+# Функція для перетворення шістнадцяткового числа у базу 2^64
+def hexadecimal_to_base(name, hex_str):
+    variables[f"{name}"] = []  # Ініціалізуємо порожній список
+
+    # Нормалізуємо рядок, додаючи провідні нулі, щоб його довжина була кратною 16
+    if len(hex_str) % 16 != 0:
+        hex_str = '0' * (16 - len(hex_str) % 16) + hex_str
+
+    # Проходимо по рядку з кінця, захоплюючи по 16 символів за раз
+    for i in range(len(hex_str), 0, -16):
+        block_hex = hex_str[max(i - 16, 0):i]
+        block_value = int(block_hex, 16)  # Перетворюємо блок у десяткове число
+        variables[f"{name}"].append(block_value)
+
+    size = len(variables[f"{name}"])
+    return name, size
+
+# Функція для перетворення десяткового числа у шістнадцяткове
+def decimal_to_hexadecimal(a):
+    return hex(a)[2:]  # Видаляємо префікс "0x"
+
+# Функція для перетворення шістнадцяткового числа у десяткове
+def hexadecimal_to_decimal(a):
+    return int(a, 16)
+
+# Функція для перетворення двійкового числа у десяткове
+def binary_to_decimal(a):
+    binary_list = variables[a[0]]  # Отримуємо список бітів
+    binary_str = ''.join(str(bit) for bit in reversed(binary_list))  # Створюємо двійковий рядок
+    decimal_value = int(binary_str, 2)  # Перетворюємо у десяткове число
+
+    return decimal_value
+
+# Функція для перетворення десяткового числа у двійкове
+def decimal_to_binary(name, a):
+    binary_string = bin(a)[2:]
+    binary_list = [int(bit) for bit in reversed(binary_string)]
+
+    variables[f"binary_{name}"] = binary_list
+    size = len(binary_list)
+
+    return f"binary_{name}", size
+
+# Функція для перетворення шістнадцяткового числа у двійкове
+def hexadecimal_to_binary(name, a):
+    binary_string = bin(int(a, 16))[2:]
+    binary_list = [int(bit) for bit in reversed(binary_string)]
+
+    variables[f"binary_{name}"] = binary_list
+    size = len(binary_list)
+
+    return f"binary_{name}", size
+
+# Функція для перетворення двійкового числа у шістнадцяткове
+def binary_to_hexadecimal(a):
+    binary_list = variables[a[0]]  # Отримуємо список бітів
+    binary_str = ''.join(str(bit) for bit in reversed(binary_list))  # Створюємо двійковий рядок
+    hex_value = hex(int(binary_str, 2))[2:]  # Перетворюємо у шістнадцяткове число
+
+    return hex_value
+
+#-----------------------------Основні функцій (лабораторна №1)-----------------------------
+
+# Функція додавання двох багаторозрядних чисел, на вхід приймаються числа у системі числення 2^64
+def addLong(a, b):
+    max_size = max(a[1], b[1])
+    variables[f"{a[0]}_add_{b[0]}"] = [0] * (max_size + 1)
+    carry = 0
+
+    for i in range(max_size):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        temp = x + y + carry
+        variables[f"{a[0]}_add_{b[0]}"][i] = temp % (2**64)
+        carry = temp // (2**64)
+
+    if carry:
+        variables[f"{a[0]}_add_{b[0]}"][max_size] = carry
+        result_size = max_size + 1
+    else:
+        result_size = max_size
+    return f"{a[0]}_add_{b[0]}", result_size
+
+# Функція віднімання одного багаторозрядного чисела від іншого багаторозрядного, на вхід приймаються числа у системі числення 2^64
+def minLong(a, b):
+    max_size = max(a[1], b[1])
+    variables[f"{a[0]}_min_{b[0]}"] = [0] * max_size
+    borrow = 0
+
+    for i in range(max_size):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        temp = x - y - borrow
+        if temp >= 0:
+            variables[f"{a[0]}_min_{b[0]}"][i] = temp
+            borrow = 0
+        else:
+            variables[f"{a[0]}_min_{b[0]}"][i] = 2**64 + temp
+            borrow = 1
+
+    result_size = max_size
+    while result_size > 1 and variables[f"{a[0]}_min_{b[0]}"][result_size - 1] == 0:
+        result_size -= 1
+
+    return f"{a[0]}_min_{b[0]}", result_size
+
+# Функція множення двох багаторозрядних чисел на цифру (в цій системі числення), на вхід приймаються числа у системі числення 2^64
+def multiplication_one_digit(a, digit, name):
+    variables[f"{a[0]}_mult_digit_{name}"] = [0] * (a[1] + 1)
+    carry = 0
+
+    for i in range(a[1]):
+        temp = variables[f"{a[0]}"][i] * digit + carry
+        variables[f"{a[0]}_mult_digit_{name}"][i] = temp % (2**64)
+        carry = temp // (2**64)
+
+    if carry:
+        variables[f"{a[0]}_mult_digit_{name}"][a[1]] = carry
+        result_size = a[1] + 1
+    else:
+        result_size = a[1]
+
+    return f"{a[0]}_mult_digit_{name}", result_size
+
+# Функція зсуву в ліво багаторозрядного чисела, на вхід приймається число у системах числення 2^64 і двійковій (множення на 2)
+def left_shift(a, shift):
+    if shift > 0:
+        variables[f"{a[0]}_left_shift"] = [0] * shift + variables[f"{a[0]}"]
+        size = a[1] + shift
+        return f"{a[0]}_left_shift", size
+    else:
+        return f"{a[0]}", a[1]
+
+# Функція зсуву вправо багаторозрядного чисела, на вхід приймається число у системах числення 2^64 і двійковій (ділення на 2)
+def right_shift(a, shift):
+    if shift > 0:
+        variables[f"{a[0]}_right_shift"] = variables[f"{a[0]}"][shift:]
+        size = max(1, a[1] - shift)
+        return f"{a[0]}_right_shift", size
+    else:
+        return f"{a[0]}", a[1]
+
+# Функція множення двох багаторозрядних чисел, на вхід приймаються числа у системі числення 2^64
+def multiplication(a, b):
+    variables[f"{a[0]}_mult_{b[0]}"] = [0] * (a[1] + b[1])
+    result_size = a[1] + b[1]
+
+    for i in range(b[1]):
+        digit_mult = multiplication_one_digit(a, variables[f"{b[0]}"][i], f"digit_{i}")
+        shifted_mult = left_shift(digit_mult, i)
+        temp_sum = addLong((f"{a[0]}_mult_{b[0]}", result_size), shifted_mult)
+        variables[f"{a[0]}_mult_{b[0]}"] = variables[temp_sum[0]]
+
+    return f"{a[0]}_mult_{b[0]}", result_size
+
+# Функція порівняння двох багаторозрядних чисел, на вхід приймаються числа у системах числення 2^64 і двійковій
+def comparison(a, b):
+    max_size = max(a[1], b[1])
+    for i in range(max_size - 1, -1, -1):
+        x = variables[f"{a[0]}"][i] if i < len(variables[f"{a[0]}"]) else 0
+        y = variables[f"{b[0]}"][i] if i < len(variables[f"{b[0]}"]) else 0
+        if x > y:
+            return 1
+        elif x < y:
+            return -1
+    return 0
+
+# Функція віднімання одного багаторозрядного чисела від іншого багаторозрядного, на вхід приймаються числа у системі числення 2
+def min_binary(a, b):
+    # Ініціалізуємо масив для результату
+    max_size = max(a[1], b[1])
+    min_size = min(a[1], b[1])
+    variables[f"{a[0]}_min_binary_{b[0]}"] = [0] * max_size
+    borrow = 0
+
+    # Вирівнюємо розміри масивів, якщо необхідно
+    if len(variables[f"{a[0]}"]) < max_size:
+        variables[f"{a[0]}"] += [0] * (max_size - len(variables[f"{a[0]}"]))
+    if len(variables[f"{b[0]}"]) < max_size:
+        variables[f"{b[0]}"] += [0] * (max_size - len(variables[f"{b[0]}"]))
+
+    # Проходимо по масиву від кінця (меншого розряду) до початку (більшого розряду)
+    for i in range(max_size):
+        temp = variables[f"{a[0]}"][i] - variables[f"{b[0]}"][i] - borrow
+        if temp >= 0:
+            variables[f"{a[0]}_min_binary_{b[0]}"][i] = temp
+            borrow = 0
+        else:
+            variables[f"{a[0]}_min_binary_{b[0]}"][i] = 2 + temp
+            borrow = 1
+
+    while variables[f"{a[0]}_min_binary_{b[0]}"][len(variables[f"{a[0]}_min_binary_{b[0]}"])-1] == 0:
+        variables[f"{a[0]}_min_binary_{b[0]}"] = variables[f"{a[0]}_min_binary_{b[0]}"][:-1]
+        if len(variables[f"{a[0]}_min_binary_{b[0]}"]) in [0,1]:
+            break
+
+    return f"{a[0]}_min_binary_{b[0]}", len(variables[f"{a[0]}_min_binary_{b[0]}"])
+
+# Функція ділення одного багаторозрядного числа на інше багаторозрядне, на вхід приймаються числа у системах числення 2^64 і двійковій
+def division(a, b, binary=False):
+    if binary:
+        a_binary = a
+        b_binary = b
+    else:
+        # Переводимо вхідні числа в базу 2
+        a_binary = base_to_binary(a)
+        b_binary = base_to_binary(b)
+
+    max_size = max(a_binary[1], b_binary[1])
+
+    # Ініціалізуємо масив для результату та залишку
+    variables[f"{a[0]}_div_{b[0]}"] = [0] * max_size  # Результат ділення
+    variables[f"{a[0]}_mod_{b[0]}"] = [0] * max_size  # Залишок
+
+    r = a_binary  # Залишок
+    k = b_binary[1]  # Розмір дільника у бітах
+    variables["q"] = [0] * max_size  # Ціла частина ділення
+
+    # Основний цикл ділення
+    iter = 0
+    while comparison(r, b_binary) in [0, 1]:
+        t = r[1]  # Поточний розмір залишку у бітах
+
+        # Зсуваємо дільник вліво так, щоб вирівняти його з залишком
+        c = left_shift(b_binary, t - k)
+
+        if comparison(r, c) == -1:  # Якщо вийшло забагато
+            t -= 1  # Повертаємося на біт назад
+            c = left_shift(b_binary, t - k)
+
+        # Виконуємо віднімання
+        r = min_binary(r, c)
+
+        # Оновлюємо результат ділення (записуємо 1 у відповідний біт)
+        p = t - k
+        if p < len(variables["q"]):
+            variables["q"][p] = 1
+
+        f = comparison(r, b_binary)
+
+    while variables["q"][len(variables["q"])-1] == 0:
+        variables["q"] = variables["q"][:-1]
+        if len(variables["q"]) == 1:
+            break
+
+    # Зберігаємо результат
+    variables[f"{a[0]}_div_{b[0]}"] = variables["q"]  # Результат ділення
+    variables[f"{a[0]}_mod_{b[0]}"] = variables[r[0]]  # Залишок
+
+    return f"{a[0]}_div_{b[0]}", f"{a[0]}_mod_{b[0]}"
+
+# Функція для додавання двох шістнадцяткових чисел
+def add_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо додавання
+    result_name, _ = addLong((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для віднімання двох шістнадцяткових чисел
+def sub_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо віднімання
+    result_name, _ = minLong((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для множення двох шістнадцяткових чисел
+def mul_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо множення
+    result_name, _ = multiplication((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    result_hex = base_to_hexadecimal((result_name,))
+    return result_hex
+
+# Функція для ділення двох шістнадцяткових чисел
+def div_hex(hex_a, hex_b):
+    a_name, a_size = hexadecimal_to_base("a", hex_a)
+    b_name, b_size = hexadecimal_to_base("b", hex_b)
+
+    # Виконуємо ділення
+    quotient_name, remainder_name = division((a_name, a_size), (b_name, b_size))
+
+    # Конвертуємо результат у шістнадцяткове представлення
+    quotient_hex = binary_to_hexadecimal((quotient_name,))
+    remainder_hex = binary_to_hexadecimal((remainder_name,))
+    return quotient_hex, remainder_hex
+
+#-----------------------------Основні функцій (лабораторна №2)-----------------------------
+
+def gcd(a, b):
+    d = decimal_to_base("d", 1)
+    #print(variables[a[0]], variables[b[0]])
+    while len(variables[a[0]]) > 0 and len(variables[b[0]]) > 0 and variables[a[0]][0] % 2 == 0 and variables[b[0]][0] % 2 == 0:
+        a = right_shift(a, 2)
+        b = right_shift(b, 2)
+        d = left_shift(d, 2)
+    while len(variables[a[0]]) > 0 and variables[a[0]][0] % 2 == 0:
+        a = right_shift(a, 2)
+    while len(variables[b[0]]) > 1 or (len(variables[b[0]]) > 0 and variables[b[0]][0] > 0):
+        while len(variables[b[0]]) > 0 and variables[b[0]][0] % 2 == 0:
+            b = right_shift(b, 2)
+        if comparison(a, b) == 1:
+            a, b = b, minLong(a, b)
+        else:
+            a, b = a, minLong(b, a)
+    d = multiplication(d, a)
+    return d
+
+def lcm(a, b):
+    a_mult_b = multiplication(a, b)
+    gcd = gcd(a, b)
+    result_quotient, _ = division(a_mult_b, gcd)
+    result = binary_to_hexadecimal([result_quotient, len(variables[result_quotient])])
+    result = hexadecimal_to_base("result_quotient", result)
+    return result
+
+def predict_mu(n, k):
+    variables["base_2k"] = [0] * (2 * k) + [1]
+    base_2k = ["base_2k", 2 * k + 1]
+    mu, r = division(base_2k, n)
+    mu = [mu, len(variables[mu])]
+    mu = binary_to_base(mu)
+    return mu
+
+def barrett_reduction(x, n, mu):
+    if comparison(x, n) == -1:
+        return x
+    k = n[1]
+    q = right_shift(x, k - 1)
+    q = multiplication(q, mu)
+    q = right_shift(q, k + 1)
+    r = multiplication(q, n)
+    r = minLong(x, r)
+    print("comp in barrett=", comparison(x, r))
+    while comparison(r, n) in [0, 1]:
+        r = minLong(r, n)
+        print("comp in barrett=", comparison(x, r))
+    return r
+
+def addModLong(a, b, n):
+    k = n[1]
+    mu = predict_mu(n, k)
+    a = barrett_reduction(a, n, mu)
+    b = barrett_reduction(b, n, mu)
+    result = addLong(a, b)
+    result = barrett_reduction(result, n, mu)
+    return result
+
+def minModLong(a, b, n):
+    k = n[1]
+    mu = predict_mu(n, k)
+    if comparison(a, b) in [0, 1]:
+        result = minLong(a, b)
+        result = barrett_reduction(result, n, mu)
+    else:
+       b = barrett_reduction(b, n, mu)
+       if comparison(a, b) in [0, 1]:
+           result = minLong(a, b)
+           result = barrett_reduction(result, n, mu)
+       else:
+           result = minLong(b, a)
+           result = minLong(n, result)
+    return result
+
+def multiplicationMod(a, b, n):
+    print("comparison a =", comparison(a, n))
+    print("comparison b =", comparison(b, n))
+    k = n[1]
+    mu = predict_mu(n, k)
+    a = barrett_reduction(a, n, mu)
+    p = base_to_hexadecimal(a)
+    print("a=", p)
+    b = barrett_reduction(b, n, mu)
+    p = base_to_hexadecimal(b)
+    print("b=", p)
+    result = multiplication(a, b)
+    l = base_to_hexadecimal(result)
+    print("a*b=", l)
+    result = barrett_reduction(result, n, mu)
+    return result
+
+def squareMod(a, n):
+    k = n[1]
+    mu = predict_mu(n, k)
+    result = barrett_reduction(a, n, mu)
+    print("a=", base_to_hexadecimal(result))
+    result = multiplication(a, a)
+    result = barrett_reduction(result, n, mu)
+    return result
+
+def powerMod(a, b, n):
+    result = hexadecimal_to_base("result", "1")
+    k = n[1]
+    mu = predict_mu(n, k)
+    a = barrett_reduction(a, n, mu)
+    b = base_to_binary(b)
+    for i in range(b[1]):
+        if variables[b[0]][i] == 1:
+            result = multiplication(a, result)
+            result = barrett_reduction(result, n, mu)
+        a = multiplication(a, a)
+        a = barrett_reduction(a, n, mu)
+    return result
+
+#-----------------------------Додаткові функцій (лабораторна №2)-----------------------------
+
+def multiplicationModSpecial(a, b, n):
+    if comparison(a, n) in [0,1]:
+        _ , a_name = division(a, n)
+        a = binary_to_hexadecimal([a_name, len(variables[a_name])])
+        a = hexadecimal_to_base("a_name", a)
+    if comparison(b, n) in [0,1]:
+        _ , b_name = division(b, n)
+        b = binary_to_hexadecimal([b_name, len(variables[b_name])])
+        b = hexadecimal_to_base("b_name", b)
+    result = multiplication(a, b)
+    _ , name_mod = division(result, n)
+    result = binary_to_hexadecimal([name_mod, len(variables[name_mod])])
+    result = hexadecimal_to_base("name_mod", result)
+    return result
+
+def squareModSpecial(a, n):
+    if comparison(a, n) in [0,1]:
+        _ , a_name = division(a, n)
+        a = binary_to_hexadecimal([a_name, len(variables[a_name])])
+        a = hexadecimal_to_base("a_name", a)
+    result = multiplication(a, a)
+    _ , name_mod = division(result, n)
+    result = binary_to_hexadecimal([name_mod, len(variables[name_mod])])
+    result = hexadecimal_to_base("name_mod", result)
+    return result
+
+def powerModSpecial(a, b, n):
+    result = hexadecimal_to_base("result", "1")
+    if comparison(a, n) in [0,1]:
+        _ , a_name = division(a, n)
+        a = binary_to_hexadecimal([a_name, len(variables[a_name])])
+        a = hexadecimal_to_base("a_name", a)
+    b = base_to_binary(b)
+    for i in range(b[1]):
+        if variables[b[0]][i] == 1:
+            result = multiplication(a, result)
+            _ , name_mod = division(result, n)
+            result = binary_to_hexadecimal([name_mod, len(variables[name_mod])])
+            result = hexadecimal_to_base("name_mod", result)
+        a = multiplication(a, a)
+        _ , a_name = division(a, n)
+        a = binary_to_hexadecimal([a_name, len(variables[a_name])])
+        a = hexadecimal_to_base("a_name", a)
+    return result
+
+#Приклад
+a = "283527121300cddeaa5d2750e2fabe17bc2289f575609de72dbd34d03ad2be472abec4f8cdb6653a8459867f72ff4840e9de7e9e3b8a08ce0427d24f14acf4f2ef1ace93e8b3ee9ec59f508c4e919a8a2e5cd550df1e31b387c67397f36423795907cc0c8a38f46c26979782030a9b5475db2902fac12161cc1ae853d68e00fe"
+b = "97154d63a6f38d0eed65a0a94a689ea40aa804d06070a49b15ecb58368217fc2863a1155c5831ab59e541e8e3705faa0d4f93a8fdd2074b522de6f4eae0f86915aedcc05eec2cbe27ab930a243f955eaf5bf6a9ce3491c1d9831a87eb9abf88c8dc2d1a8258aee9d456dacd4312467278b27dfe19d7285f62caec31c8552e3b0"
+n = "c02fc3804ec372be0b90bee955ee916c226a690198c14022d87d843387256f279383f067845aa2af5f1ea9b0a8e4e0fe0d5d595ee8cd4b07f7fc4cc2456f98fe9c5edaddcacda558f2077069ec8c9ccebbdaa64c683dcb5bb24511741ce9d821c2bfcb0179499e8bbc1e63e4ad7a5ff87c4dadc226f3905f0da40a51ae3c36a9"
+
+a = hexadecimal_to_base("a", a)
+b = hexadecimal_to_base("b", b)
+n = hexadecimal_to_base("n", n)
+
+a_add_b_mod = addModLong(a, b, n)
+a_add_b_mod = base_to_hexadecimal(a_add_b_mod)
+print("A+B mod N =", a_add_b_mod)
+
+a_min_b_mod = minModLong(a, b, n)
+a_min_b_mod = base_to_hexadecimal(a_min_b_mod)
+print("A-B mod N =", a_min_b_mod)
+
+a_mult_spes_b_mod = multiplicationModSpecial(a, b, n)
+a_mult_spes_b_mod = base_to_hexadecimal(a_mult_spes_b_mod)
+print("A*B mod N =", a_mult_spes_b_mod)
+
+a_squar_spes_b_mod = squareModSpecial(a, n)
+a_squar_spes_b_mod = base_to_hexadecimal(a_squar_spes_b_mod)
+print("A^2 mod N =", a_squar_spes_b_mod)
